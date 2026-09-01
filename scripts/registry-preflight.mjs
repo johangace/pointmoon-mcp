@@ -211,14 +211,27 @@ async function npmOwnership(server, pkg) {
     record('PASS', 'package.json mcpName', `${pkg.mcpName} matches server.json name`)
   }
 
-  if (entry.version !== pkg.version) {
+  // REGISTRY.md step 3 tells the founder to set BOTH version fields in server.json
+  // to the version actually published, and says this preflight fails if either
+  // drifts. Check both, or that sentence is not true.
+  const drifted = [
+    entry.version !== pkg.version && `server.json packages[].version is ${entry.version}`,
+    server.version !== pkg.version && `server.json version is ${server.version}`,
+  ].filter(Boolean)
+
+  if (drifted.length > 0) {
     record(
       'FAIL',
       'npm version drift',
-      `server.json packages[].version is ${entry.version}; package.json version is ${pkg.version}.`
+      `${drifted.join('; ')}; package.json version is ${pkg.version}.\n` +
+        'REGISTRY.md step 3: both server.json version fields must be the version actually published.'
     )
   } else {
-    record('PASS', 'npm version in step', `server.json and package.json both say ${entry.version}`)
+    record(
+      'PASS',
+      'npm version in step',
+      `server.json version and packages[].version and package.json all say ${pkg.version}`
+    )
   }
 
   try {
