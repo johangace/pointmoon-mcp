@@ -8,6 +8,7 @@ That is the whole point: a fluent model is good at language and bad at knowing w
 
 This repo is the open connector and the public field-truth contract. The hosted server does the work — there is nothing to run and no secrets to hold.
 
+- **Run something in five minutes:** [examples/](./examples/)
 - **Live demo:** https://pointmoon.vercel.app/now
 - **npm:** https://www.npmjs.com/package/pointmoon-mcp
 - **Contract:** [CONTRACT.md](./CONTRACT.md)
@@ -21,53 +22,84 @@ Pointmoon is a hosted remote MCP server. You add it as a tool; your agent calls 
 
 ---
 
-## Quickstart
+## Five minutes, nothing installed
 
-### Claude Desktop — remote (recommended)
+If you just want to see a real payload, you do not need an MCP client at all.
+Node 18+ is the only prerequisite — there is no `npm install` step because there is
+nothing to install:
 
-Bridge the hosted server in over stdio with `mcp-remote`. Add to `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "pointmoon": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote", "https://pointmoon.vercel.app/api/mcp"]
-    }
-  }
-}
+```bash
+git clone https://github.com/johangace/pointmoon-mcp.git
+cd pointmoon-mcp
+node examples/01-first-call.mjs
 ```
 
-If your client supports native remote (HTTP) MCP servers directly, point it at:
+Real output, trimmed:
+
+```
+Pointmoon @ https://pointmoon.vercel.app
+schemaVersion: field-truth@1.1.0
+
+Pointmoon field-truth: 121 sourced signals for 42.36,-71.06 (each carries source/observedAt/ttlMinutes/confidence).
+
+Sourced signals (121 total, first few):
+  Time of day                afternoon          [source: universal, confidence: 1]
+  Moon phase                 waning gibbous     [source: astronomy, confidence: 0.95]
+  Habitat type               built-up           [source: place, confidence: 0.62]
+  ... and 113 more
+
+Freshness envelope for the weather reading:
+  source:      open-meteo-forecast-model
+  observedAt:  2026-09-01T20:45:00.000Z
+  ttlMinutes:  90   <- producer-declared freshness window
+  temperature: 18.6°C
+```
+
+Four examples ship here — a first call, a call by place name, a coordinate where
+Pointmoon goes deliberately silent, and the same thing over plain HTTP with no MCP.
+See [examples/](./examples/).
+
+---
+
+## Add it to your MCP client
+
+Every config below points at the hosted server, `https://pointmoon.vercel.app/api/mcp`.
+No key, no account, no OAuth — it is a public read-only surface.
+
+### Claude Code
+
+```bash
+claude mcp add --transport http pointmoon https://pointmoon.vercel.app/api/mcp
+```
+
+Or commit it to your project's `.mcp.json` so your team gets it too:
 
 ```json
 {
   "mcpServers": {
     "pointmoon": {
+      "type": "http",
       "url": "https://pointmoon.vercel.app/api/mcp"
     }
   }
 }
 ```
 
-### Cursor
+Then check it landed with `/mcp` inside Claude Code.
 
-In `~/.cursor/mcp.json` (or the project `.cursor/mcp.json`):
+### Claude Desktop
 
-```json
-{
-  "mcpServers": {
-    "pointmoon": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote", "https://pointmoon.vercel.app/api/mcp"]
-    }
-  }
-}
-```
+Remote MCP servers are added through the UI, as a **custom connector** — not through
+`claude_desktop_config.json`, which is for local stdio servers:
 
-### stdio package (local command)
+1. Open **Settings** (`Ctrl+,` / `⌘,`) → **Connectors**
+2. **Add** → **Add custom connector**
+3. Paste `https://pointmoon.vercel.app/api/mcp`, then **Add**
 
-No clone needed. The published package runs the connector and talks to the hosted API:
+There is no authentication step; Pointmoon needs none.
+
+If you would rather keep it in the config file, use the stdio connector instead — the
+published package talks to the same hosted API:
 
 ```json
 {
@@ -80,14 +112,42 @@ No clone needed. The published package runs the connector and talks to the hoste
 }
 ```
 
-Override the upstream for local development with `POINTMOON_BASE_URL`.
+### Cursor
+
+In `~/.cursor/mcp.json` for every project, or `.cursor/mcp.json` for one:
+
+```json
+{
+  "mcpServers": {
+    "pointmoon": {
+      "url": "https://pointmoon.vercel.app/api/mcp"
+    }
+  }
+}
+```
+
+### Any other MCP client
+
+Pointmoon speaks the MCP **Streamable HTTP** transport at
+`https://pointmoon.vercel.app/api/mcp`. Clients that only support stdio can bridge to
+it with the `pointmoon-mcp` package above (or any generic stdio-to-HTTP bridge).
+`POINTMOON_BASE_URL` overrides the upstream if you are running Pointmoon yourself.
+
+You can confirm the endpoint answers before wiring anything up:
+
+```bash
+curl -s https://pointmoon.vercel.app/api/mcp \
+  -H 'content-type: application/json' \
+  -H 'accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
 
 ### No MCP — plain HTTP
 
 The same field-truth is one request away. Use `audience=facts` for the prose-free shape:
 
 ```bash
-curl "https://pointmoon.vercel.app/api/moon?lat=42.36&lng=-71.06&audience=facts"
+curl "https://pointmoon.vercel.app/api/moon?audience=facts&surface=open&lat=42.36&lng=-71.06"
 ```
 
 ---
@@ -108,60 +168,111 @@ Get sourced, current physical and environmental field-truth for a location.
 
 **Returns** the `audience=facts` shape: a list of sourced signals plus a per-domain field snapshot, each reading carrying `source`, `observedAt`, `ttlMinutes`, and `confidence` — or typed silence. See [CONTRACT.md](./CONTRACT.md) for the full envelope.
 
-A compact, real-shaped example:
+A trimmed excerpt of a real response (captured by `examples/01-first-call.mjs`):
 
-```json
+```jsonc
 {
+  "schemaVersion": "field-truth@1.1.0",
   "facts": {
     "signals": [
       {
-        "id": "temperature",
-        "label": "Air temperature",
-        "value": "11.4°C",
-        "source": "open-meteo",
-        "confidence": 0.95
+        "id": "nature.weather.temperature",
+        "label": "Temperature",
+        "value": 18.6,
+        "source": "weather",
+        "confidence": 0.9,
+        "evidence": ["temperatureC=18.6"]
       },
       {
-        "id": "wind",
-        "label": "Wind",
-        "value": "14 km/h NW",
-        "source": "open-meteo",
-        "confidence": 0.9
+        "id": "nature.moon_phase",
+        "label": "Moon phase",
+        "value": "waning gibbous",
+        "source": "astronomy",
+        "confidence": 0.95,
+        "evidence": ["illuminationPct=77"]
       }
     ],
     "fieldSnapshot": {
       "weather": {
-        "temperatureC": 11.4,
-        "windKph": 14,
-        "source": "open-meteo",
-        "observedAt": "2026-06-17T13:00:00Z",
-        "ttlMinutes": 30,
-        "confidence": 0.95
+        "current": {
+          "observedAt": "2026-09-01T20:45:00.000Z",
+          "source": "open-meteo-forecast-model",
+          "ttlMinutes": 90,
+          "epistemicType": "predicted",
+          "temperatureC": 18.6
+        }
       }
     },
-    "meta": { "lat": 42.36, "lng": -71.06, "resolvedAt": "2026-06-17T13:05:11Z" }
-  },
-  "notices": [
-    { "kind": "license", "source": "open-meteo", "text": "Weather data by Open-Meteo (CC BY 4.0)." }
-  ]
-}
-```
-
-Typed silence for an axis it cannot ground:
-
-```json
-{
-  "fieldSnapshot": {
-    "water": {
-      "silent": true,
-      "reason": "no_gauge_in_range",
-      "confidence": 0
+    "meta": {
+      "liveReadiness": {
+        "status": "partial",
+        "providers": { "weather": "open-meteo", "place": "osm", "hydro": "unresolved" }
+      }
     }
+  },
+  "notices": {
+    "attributionRequired": true,
+    "sources": [
+      {
+        "source": "open-meteo",
+        "license": "CC BY 4.0 (data); free API is non-commercial only",
+        "attribution": "Weather data by Open-Meteo.com (CC BY 4.0)"
+      }
+    ]
   }
 }
 ```
 
+Signals are lean: they carry `source` and `confidence`, but not `observedAt` or
+`ttlMinutes`. The freshness envelope lives on the matching `fieldSnapshot` reading —
+`fieldSnapshot.weather.current` above declares a 90-minute window from `observedAt`.
+
+Typed silence for an axis it cannot ground. On this surface it is per axis: the
+provider is marked `"unresolved"` with a reason, and `meta.liveReadiness` drops.
+Real excerpt from an open-ocean coordinate (`examples/03-typed-silence.mjs`):
+
+```jsonc
+{
+  "facts": {
+    "fieldSnapshot": {
+      "place": {
+        "provider": "unresolved",
+        "resolutionStatus": "unresolved",
+        "resolutionReason": "provider-empty",
+        "placeName": null
+      },
+      "hydro": {
+        "provider": "unresolved",
+        "resolutionStatus": "unresolved",
+        "resolutionReason": "timeout",
+        "distanceToWaterKm": null
+      }
+    },
+    "meta": { "liveReadiness": { "status": "thin", "score": 1 } }
+  }
+}
+```
+
+[CONTRACT.md](./CONTRACT.md) documents the equivalent explicit
+`{ "silent": true, "reason": ..., "confidence": 0 }` form. Handle both: silence is a
+normal, expected outcome, never an error and never a fabricated value.
+
 Treat the returned readings as the only verified facts. Render them into your own wording; do not invent conditions Pointmoon did not report.
+
+---
+
+## Examples
+
+[`examples/`](./examples/) holds four runnable files — a first call, a call by place
+name, a coordinate where Pointmoon goes deliberately silent, and the same field-truth
+over plain HTTP. They use only Node built-ins, run against the hosted server, and each
+one asserts it got back at least one sourced claim.
+
+CI runs them on every push, on every pull request, and once a day on a schedule, so a
+hosted server that stops grounding shows up as a red build rather than as a stranger's
+bad first five minutes. A companion drill (`examples/ci-failure-drill.mjs`) points the
+same runner at a claim-less stub and fails if it does *not* go red — a check that
+cannot fail would only be reporting safety it never verified.
 
 ---
 
