@@ -72,6 +72,10 @@ does not fail the build for them; run it to see the current diff.
 8. **Update the "Verified against the hosted contract" section of
    [`README.md`](./README.md)** with the new version, the contract version and the date,
    and tag the release.
+9. **Then, and only then, the MCP Registry listing becomes possible.** The registry
+   verifies npm ownership by reading `mcpName` out of the *published* `package.json`;
+   the artifact on npm today predates that field, so the republish above is what unblocks
+   it. Pick up at step 3 of [`REGISTRY.md`](./REGISTRY.md).
 
 ## Why there is no CI publish job
 

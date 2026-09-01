@@ -12,6 +12,7 @@ This repo is the open connector and the public field-truth contract. The hosted 
 - **Live demo:** https://pointmoon.vercel.app/now
 - **npm:** https://www.npmjs.com/package/pointmoon-mcp
 - **Contract:** [CONTRACT.md](./CONTRACT.md)
+- **MCP Registry:** not listed yet — [REGISTRY.md](./REGISTRY.md) says what is left
 - **License:** Apache-2.0
 
 ---
@@ -149,6 +150,31 @@ The same field-truth is one request away. Use `audience=facts` for the prose-fre
 ```bash
 curl "https://pointmoon.vercel.app/api/moon?audience=facts&surface=open&lat=42.36&lng=-71.06"
 ```
+
+---
+
+## Find it in the MCP Registry
+
+**Not yet — and this section will say so until it is true.** As of 2026-09-01,
+`https://registry.modelcontextprotocol.io/v0/servers?search=pointmoon` returns
+`{"servers":[],"metadata":{"count":0}}`. There is no listing to link to, so there is no
+link here; a link to a page that 404s would be worse than this sentence.
+
+The payload is ready: [`server.json`](./server.json) at the repository root validates
+against the current official server schema and describes both ways to run Pointmoon —
+the hosted remote at `https://pointmoon.vercel.app/api/mcp` and the `pointmoon-mcp`
+package on npm. Check it yourself:
+
+```bash
+npm run registry:preflight
+```
+
+What is left is a credential a repository cannot hold. [`REGISTRY.md`](./REGISTRY.md)
+names each gate, which credential clears it, and in what order. When the entry goes
+live, this section becomes the link to it — that is step 8 of the note.
+
+Meanwhile, everything above works today with no registry involved: the hosted server
+takes any MCP client, and `npx -y pointmoon-mcp` takes any stdio one.
 
 ---
 

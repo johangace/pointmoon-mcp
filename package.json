@@ -1,6 +1,7 @@
 {
   "name": "pointmoon-mcp",
   "version": "0.1.0",
+  "mcpName": "io.github.johangace/pointmoon",
   "description": "MCP stdio server for Pointmoon — sourced, current physical and environmental field-truth for a geographic coordinate. Each fact carries source, observedAt, ttlMinutes, and confidence, or explicit typed silence. Never guesses.",
   "license": "Apache-2.0",
   "type": "module",
@@ -11,7 +12,8 @@
     "examples": "node examples/run-all.mjs",
     "examples:drill": "node examples/ci-failure-drill.mjs",
     "conformance": "node conformance/run.mjs",
-    "conformance:drill": "node conformance/drill.mjs"
+    "conformance:drill": "node conformance/drill.mjs",
+    "registry:preflight": "node scripts/registry-preflight.mjs"
   },
   "files": [
     "bin/",
