@@ -276,6 +276,37 @@ cannot fail would only be reporting safety it never verified.
 
 ---
 
+## Verified against the hosted contract
+
+The package you install from npm and the server it talks to are two different
+artifacts, and they can drift apart in silence. So CI checks them against each other.
+
+**`pointmoon-mcp@0.1.0` was verified against the hosted `field-truth@1.1.0` contract on
+2026-09-01**, live at `https://pointmoon.vercel.app/api/mcp`: same `field_truth` tool,
+the same seven input-schema properties (`lat`, `lng`, `place`, `city`, `adapterMode`,
+`includeFieldSnapshot`, `ebirdApiKey`), the same live envelope shape, the same trust
+block and the same typed-silence contract.
+
+[`conformance/`](./conformance/) re-checks that on every push, every pull request and
+once a day. It installs the **published** package (`npx -y pointmoon-mcp@latest`) — not
+this working tree, which is not what you have — drives it over stdio, and compares it
+field by field against the hosted server's live `tools/list` and one live `field_truth`.
+When something moves it names the field and the side it moved on, rather than reporting
+a bare assertion failure. `conformance/drill.mjs` feeds the same comparator deliberately
+divergent surfaces and fails unless each one goes red naming the exact field, so a green
+conformance run is evidence rather than a formality.
+
+Known and expected: the connector also advertises `moon_packet` and `decision_seam`,
+two internal/legacy debug shims it implements over plain HTTP. The hosted server does
+not advertise them as MCP tools. Public agents should only need `field_truth`.
+
+```bash
+node conformance/run.mjs      # against the published package + hosted server
+node conformance/drill.mjs    # the negative control, entirely offline
+```
+
+---
+
 ## License
 
 [Apache-2.0](./LICENSE).

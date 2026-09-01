@@ -9,7 +9,9 @@
   },
   "scripts": {
     "examples": "node examples/run-all.mjs",
-    "examples:drill": "node examples/ci-failure-drill.mjs"
+    "examples:drill": "node examples/ci-failure-drill.mjs",
+    "conformance": "node conformance/run.mjs",
+    "conformance:drill": "node conformance/drill.mjs"
   },
   "files": [
     "bin/",
