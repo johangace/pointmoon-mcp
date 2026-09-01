@@ -1,4 +1,4 @@
-name: examples
+name: examples and conformance
 
 # The examples are the public front door. If they stop returning claims, a
 # stranger's first five minutes with Pointmoon is a stack trace — so this build
@@ -73,3 +73,44 @@ jobs:
 
       - name: Run every example against the hosted server
         run: node examples/run-all.mjs
+
+  # -------------------------------------------------------------------------
+  # Conformance: does the package a stranger installs still speak the contract
+  # we serve? (johangace/pointmoon#72)
+  #
+  # The examples above check the hosted server. They say nothing about the
+  # artifact on npm, which was published once and has never been republished
+  # while the engine kept moving. These two jobs close that gap.
+  # -------------------------------------------------------------------------
+
+  # The negative control, and it runs FIRST. `conformance` below declares
+  # `needs: conformance-drill`, so a green conformance result can never be
+  # reported by a comparator that was not first proven capable of going red.
+  # Entirely offline: stub connector on stdio, stub server on 127.0.0.1.
+  conformance-drill:
+    name: the conformance check can go red
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node conformance/drill.mjs
+
+  conformance:
+    name: published package matches the hosted contract
+    runs-on: ubuntu-latest
+    needs: conformance-drill
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Deliberately `npx -y pointmoon-mcp@latest`: the artifact from the npm
+      # registry, NOT bin/pointmoon-mcp.mjs in this checkout. Testing the
+      # working tree would prove nothing about what strangers have installed.
+      - name: Compare the published npm package against the live hosted server
+        run: node conformance/run.mjs
