@@ -8,10 +8,10 @@ no `secrets.*` reference. That absence is the design, not an omission — do not
 
 ## The gate
 
-The npm publish token used for the 2026-06-17 launch **was exposed in plaintext during
-that launch and has not been rotated.** Nothing may be published with it, including a
-release that is otherwise ready. Rotation is a founder action tracked separately,
-alongside the Smithery API key.
+**Publishing is gated on a credential rotation that has not happened yet.** Until the
+founder has rotated the publish credential, nothing may be published — including a
+release that is otherwise ready. That rotation is tracked privately, not in this public
+repository.
 
 So the release stops here, on purpose: the conformance check
 ([`conformance/`](./conformance/)) proves whether a republish is *needed*, and this file
@@ -33,8 +33,8 @@ does not fail the build for them; run it to see the current diff.
 
 ## The order, when the credential is clean
 
-1. **Rotate the npm publish token** (founder; the exposed one must be revoked, not just
-   replaced). Nothing below may happen first.
+1. **Rotate the npm publish credential** (founder; the previous one must be revoked, not
+   merely replaced). Nothing below may happen first.
 2. **Run the drill, then the conformance check, locally:**
    ```bash
    node conformance/drill.mjs   # must exit 0 — proves the check can go red
@@ -77,6 +77,6 @@ does not fail the build for them; run it to see the current diff.
 
 `pointmoon-mcp` has one job on npm: to be the thing a stranger installs and trust. A
 publish step in CI would mean this repository holds a credential that can overwrite that
-artifact — and the last credential that could do so leaked. A human deciding to publish,
-with a token that was rotated after the leak, is the control. Automating it removes the
-control and adds nothing: releases here are rare and deliberate.
+artifact, and that credential must stay outside CI. A human deciding to publish, with a
+freshly rotated token, is the control. Automating it removes the control and adds
+nothing: releases here are rare and deliberate.
