@@ -7,6 +7,10 @@
   "bin": {
     "pointmoon-mcp": "./bin/pointmoon-mcp.mjs"
   },
+  "scripts": {
+    "examples": "node examples/run-all.mjs",
+    "examples:drill": "node examples/ci-failure-drill.mjs"
+  },
   "files": [
     "bin/",
     "CONTRACT.md",

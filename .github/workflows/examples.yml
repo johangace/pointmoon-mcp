@@ -1,0 +1,75 @@
+name: examples
+
+# The examples are the public front door. If they stop returning claims, a
+# stranger's first five minutes with Pointmoon is a stack trace — so this build
+# goes red, on every push, every PR, and once a day whether or not anyone
+# pushed. A daily run is the point: the hosted server and its upstream sources
+# can stop grounding without a single commit landing here.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # 07:15 UTC daily. Catches an outage that no commit would have caught.
+    - cron: '15 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Proves the check below is capable of failing, BEFORE trusting a green run
+  # from it. Runs entirely against a local stub, so it needs no network and no
+  # hosted server: it stands up a server that returns a well-formed but
+  # claim-less envelope and asserts the runner exits non-zero. A check that
+  # cannot go red reports safety it never verified.
+  failure-drill:
+    name: the check can go red
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node examples/ci-failure-drill.mjs
+
+  # The real thing: a fresh clone, only Node installed, no key, no account,
+  # no local server — exactly what a stranger following the README has.
+  examples:
+    name: examples on node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22']
+    steps:
+      - name: Fresh clone
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Assert a clean machine (no install step, no dependencies)
+        run: |
+          set -euo pipefail
+          if [ -d node_modules ]; then
+            echo "node_modules exists in a fresh clone — the examples are no longer install-free."
+            exit 1
+          fi
+          node -e '
+            const pkg = require("./package.json");
+            const deps = Object.keys(pkg.dependencies || {});
+            if (deps.length > 0) {
+              console.error("Runtime dependencies declared: " + deps.join(", "));
+              console.error("The first example must run with only Node installed.");
+              process.exit(1);
+            }
+            console.log("OK: zero runtime dependencies. Node " + process.version + " and nothing else.");
+          '
+
+      - name: Run every example against the hosted server
+        run: node examples/run-all.mjs
