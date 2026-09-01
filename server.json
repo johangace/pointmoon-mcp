@@ -1,0 +1,39 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.johangace/pointmoon",
+  "title": "Pointmoon Field Truth",
+  "description": "Sourced, time-stamped physical and environmental field-truth for a location — or typed silence.",
+  "version": "0.1.0",
+  "websiteUrl": "https://pointmoon.vercel.app/now",
+  "repository": {
+    "url": "https://github.com/johangace/pointmoon-mcp",
+    "source": "github",
+    "id": "1272515967"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://pointmoon.vercel.app/api/mcp"
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "pointmoon-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "POINTMOON_BASE_URL",
+          "description": "Override the hosted Pointmoon server the connector talks to. Defaults to https://pointmoon.vercel.app — leave unset unless you run Pointmoon yourself.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}
