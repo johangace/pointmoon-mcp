@@ -12,6 +12,7 @@ This repo is the open connector and the public field-truth contract. The hosted 
 - **Live demo:** https://pointmoon.vercel.app/now
 - **npm:** https://www.npmjs.com/package/pointmoon-mcp
 - **Contract:** [CONTRACT.md](./CONTRACT.md)
+- **Engine docs:** season, eBird BYO-key, teachable doorway — [below](#engine-docs), with the reading notes in [CONTRACT.md](./CONTRACT.md)
 - **MCP Registry:** not listed yet — [REGISTRY.md](./REGISTRY.md) says what is left
 - **License:** Apache-2.0
 
@@ -20,6 +21,31 @@ This repo is the open connector and the public field-truth contract. The hosted 
 ## How it works
 
 Pointmoon is a hosted remote MCP server. You add it as a tool; your agent calls `field_truth` with a location; the server returns sourced tokens or typed silence. There is no install, no key, and no model running on your side. The connector in this repo is a thin stdio wrapper over the same hosted HTTP API for clients that prefer a local command.
+
+---
+
+## Engine docs
+
+This repo is the open connector and the public field-truth envelope. The longer
+contracts — how to read season, how eBird BYO-key licensing works, what a
+teachable doorway is — live on the engine, on `main`. There is no `/docs` route
+on https://pointmoon.vercel.app; the product site already points at GitHub blob
+URLs, and those are the stable paths.
+
+| Topic | Where |
+| --- | --- |
+| Season — which field to trust, and what a mismatch means | [Season](./CONTRACT.md#season) in CONTRACT.md; engine [`docs/SEASON_CONTRACT.md`](https://github.com/johangace/pointmoon/blob/main/docs/SEASON_CONTRACT.md) |
+| eBird bring-your-own key | [`docs/EBIRD.md`](https://github.com/johangace/pointmoon/blob/main/docs/EBIRD.md) |
+| Teachable doorway | [`docs/TEACHABLE_DOORWAY.md`](https://github.com/johangace/pointmoon/blob/main/docs/TEACHABLE_DOORWAY.md) |
+| Envelope / API | [`docs/API_REFERENCE.md`](https://github.com/johangace/pointmoon/blob/main/docs/API_REFERENCE.md) |
+| Silence | [`docs/SILENCE_CONTRACT.md`](https://github.com/johangace/pointmoon/blob/main/docs/SILENCE_CONTRACT.md) |
+| MCP wiring | [`docs/MCP_SERVER.md`](https://github.com/johangace/pointmoon/blob/main/docs/MCP_SERVER.md) |
+| All engine docs | [`docs/`](https://github.com/johangace/pointmoon/tree/main/docs) |
+
+Teachable doorway is a **reading contract**, not a second MCP tool. A live
+`tools/list` against `https://pointmoon.vercel.app/api/mcp` does not advertise
+`teachable_doorways`. Public agents should call `field_truth`. If a doorway
+tool ships later, this section will name it; until then, do not call one.
 
 ---
 
@@ -190,9 +216,9 @@ Get sourced, current physical and environmental field-truth for a location.
 | `lng` | number | Longitude, decimal degrees WGS84 (e.g. `-71.06`). |
 | `place` | string | A place name to geocode (e.g. `"Yosemite Valley"`) when you do not have coordinates. Provide either `place` or `lat`/`lng`; `lat`/`lng` win when both are given. |
 | `city` | string | Optional human-readable label for echo/logging only. Does not geolocate. |
-| `ebirdApiKey` | string | Optional bring-your-own [eBird](https://ebird.org/api/keygen) token. eBird is non-commercial-licensed, so bird observations are returned only when you supply your own key (sent as a header, never logged). Omit it and the bird axis stays silent. |
+| `ebirdApiKey` | string | Optional bring-your-own [eBird](https://ebird.org/api/keygen) token. eBird is non-commercial-licensed, so bird observations are returned only when you supply your own key (sent as a header, never logged). Omit it and the bird axis stays silent. Full contract: engine [`docs/EBIRD.md`](https://github.com/johangace/pointmoon/blob/main/docs/EBIRD.md). |
 
-**Returns** the `audience=facts` shape: a list of sourced signals plus a per-domain field snapshot, each reading carrying `source`, `observedAt`, `ttlMinutes`, and `confidence` — or typed silence. See [CONTRACT.md](./CONTRACT.md) for the full envelope.
+**Returns** the `audience=facts` shape: a list of sourced signals plus a per-domain field snapshot, each reading carrying `source`, `observedAt`, `ttlMinutes`, and `confidence` — or typed silence. See [CONTRACT.md](./CONTRACT.md) for the full envelope, including [how to read season](./CONTRACT.md#season).
 
 A trimmed excerpt of a real response (captured by `examples/01-first-call.mjs`):
 

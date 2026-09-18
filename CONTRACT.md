@@ -9,6 +9,24 @@ The governing principle: **Pointmoon emits sourced observational tokens with pro
 freshness, and confidence — or typed silence. It does not write prose, and it does not
 guess.** Every field below is answerable to that.
 
+Longer-form contracts live on the engine, on `main`. Use these when this envelope
+description is not enough. There is no `/docs` route on https://pointmoon.vercel.app;
+these GitHub blob URLs are the same stable paths the product site already uses.
+
+| Topic | Engine doc |
+| --- | --- |
+| Season reading | [`docs/SEASON_CONTRACT.md`](https://github.com/johangace/pointmoon/blob/main/docs/SEASON_CONTRACT.md) |
+| eBird bring-your-own key | [`docs/EBIRD.md`](https://github.com/johangace/pointmoon/blob/main/docs/EBIRD.md) |
+| Teachable doorway | [`docs/TEACHABLE_DOORWAY.md`](https://github.com/johangace/pointmoon/blob/main/docs/TEACHABLE_DOORWAY.md) |
+| Envelope / API | [`docs/API_REFERENCE.md`](https://github.com/johangace/pointmoon/blob/main/docs/API_REFERENCE.md) |
+| Silence | [`docs/SILENCE_CONTRACT.md`](https://github.com/johangace/pointmoon/blob/main/docs/SILENCE_CONTRACT.md) |
+| MCP wiring | [`docs/MCP_SERVER.md`](https://github.com/johangace/pointmoon/blob/main/docs/MCP_SERVER.md) |
+| All engine docs | [`docs/`](https://github.com/johangace/pointmoon/tree/main/docs) |
+
+Season, eBird, and teachable doorway are summarized after the envelope so a
+consumer landing here does not have to hunt the engine repo blindly. They do
+not replace those docs.
+
 ---
 
 ## Response envelope
@@ -113,6 +131,63 @@ An array of licensing and attribution notices for the sources that contributed t
 response. Each notice identifies a `source` and the attribution or license terms that
 apply. Consumers that display or redistribute Pointmoon data are responsible for honoring
 these notices.
+
+---
+
+## Season
+
+Season is a field-truth reading, not a guess. On the `audience=facts` envelope, read
+it from these three places — they agree:
+
+- `facts.meta.season`
+- `facts.fieldSnapshot.time.season`
+- the `nature.season` signal in `facts.signals[]`
+
+Do **not** read season from the legacy `axes` packet. `axes.time.calendar.season` is
+not the facts-envelope token and can disagree with it.
+
+Phenology (`facts.fieldSnapshot.phenology`, signals under `nature.phenology.*`) is a
+separate domain: what is happening in the living year, not the calendar season token.
+When seasonal expectation and the current field are not aligned,
+`facts.fieldSnapshot.conflicts.seasonMismatch` is a typed conflict, not a second
+season value.
+
+Hemisphere, which token to trust, and how mismatch is declared are specified in the
+engine season contract:
+[`docs/SEASON_CONTRACT.md`](https://github.com/johangace/pointmoon/blob/main/docs/SEASON_CONTRACT.md).
+
+---
+
+## eBird bring-your-own key
+
+eBird data is licensed for non-commercial use unless you have permission from the
+Cornell Lab. On this public surface, bird observations from eBird are returned **only**
+when the caller supplies their own key, making them the licensee.
+
+- MCP: pass `ebirdApiKey` on `field_truth`.
+- HTTP: send it as the `x-ebird-api-token` header. Never as a query parameter — it
+  must stay out of URL logs. The hosted server and this connector never log the token.
+- Omit the key and the eBird axis stays silent. That is typed silence, not an error.
+- Free key: https://ebird.org/api/keygen
+
+The licensing, header, and silence rules in full:
+[`docs/EBIRD.md`](https://github.com/johangace/pointmoon/blob/main/docs/EBIRD.md).
+
+---
+
+## Teachable doorway
+
+A teachable doorway is an engine reading contract: what Pointmoon selected as worth
+noticing at a place (a species, a weather shift, a pattern). It is **not** a hosted
+MCP tool.
+
+As of this writing, `POST https://pointmoon.vercel.app/api/mcp` `tools/list` does not
+advertise `teachable_doorways`. Do not call a tool by that name. Public agents use
+`field_truth` and read the facts envelope. If a doorway tool ships later, the engine
+doc and this paragraph will name it.
+
+The doorway contract:
+[`docs/TEACHABLE_DOORWAY.md`](https://github.com/johangace/pointmoon/blob/main/docs/TEACHABLE_DOORWAY.md).
 
 ---
 
