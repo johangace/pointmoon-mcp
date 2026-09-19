@@ -34,7 +34,7 @@ URLs, and those are the stable paths.
 
 | Topic | Where |
 | --- | --- |
-| Season — which field to trust, and what a mismatch means | [Season](./CONTRACT.md#season) in CONTRACT.md; engine [`docs/SEASON_CONTRACT.md`](https://github.com/johangace/pointmoon/blob/main/docs/SEASON_CONTRACT.md) |
+| Season — canonical label, definition, and mismatch semantics | [Season](./CONTRACT.md#season) in CONTRACT.md; engine [`docs/SEASON.md`](https://github.com/johangace/pointmoon/blob/main/docs/SEASON.md) |
 | eBird bring-your-own key | [`docs/EBIRD.md`](https://github.com/johangace/pointmoon/blob/main/docs/EBIRD.md) |
 | Teachable doorway | [`docs/TEACHABLE_DOORWAY.md`](https://github.com/johangace/pointmoon/blob/main/docs/TEACHABLE_DOORWAY.md) |
 | Envelope / API | [`docs/API_REFERENCE.md`](https://github.com/johangace/pointmoon/blob/main/docs/API_REFERENCE.md) |
@@ -42,10 +42,11 @@ URLs, and those are the stable paths.
 | MCP wiring | [`docs/MCP_SERVER.md`](https://github.com/johangace/pointmoon/blob/main/docs/MCP_SERVER.md) |
 | All engine docs | [`docs/`](https://github.com/johangace/pointmoon/tree/main/docs) |
 
-Teachable doorway is a **reading contract**, not a second MCP tool. A live
-`tools/list` against `https://pointmoon.vercel.app/api/mcp` does not advertise
-`teachable_doorways`. Public agents should call `field_truth`. If a doorway
-tool ships later, this section will name it; until then, do not call one.
+The engine implements `teachable_doorways` as a separate read-only MCP tool over
+the same field-truth substrate. Tool availability follows the deployed server,
+not this connector's prose: call `tools/list` and use `teachable_doorways` only
+when it is advertised. Until the deployment containing pointmoon#374 is live,
+public agents should continue to call `field_truth` and read the facts envelope.
 
 ---
 
