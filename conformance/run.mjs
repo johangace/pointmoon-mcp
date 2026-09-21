@@ -14,7 +14,7 @@
 //                   from the npm registry, driven over stdio like an MCP
 //                   client. NOT bin/pointmoon-mcp.mjs in this tree; the tree
 //                   is not what strangers have.
-//   HOSTED SIDE     https://pointmoon.vercel.app/api/mcp — `tools/list` and
+//   HOSTED SIDE     https://pointmoon.ai/api/mcp — `tools/list` and
 //                   one live `tools/call`.
 //
 // Why `tools/list` and not `/.well-known/mcp/server-card.json`: the card is a

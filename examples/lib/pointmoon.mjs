@@ -8,7 +8,7 @@
 // Point it somewhere else with POINTMOON_BASE_URL (used by the CI failure
 // drill and by anyone running Pointmoon locally).
 
-export const BASE_URL = process.env.POINTMOON_BASE_URL || 'https://pointmoon.vercel.app'
+export const BASE_URL = process.env.POINTMOON_BASE_URL || 'https://pointmoon.ai'
 export const MCP_URL = new URL('/api/mcp', BASE_URL).toString()
 export const HTTP_URL = new URL('/api/moon', BASE_URL).toString()
 

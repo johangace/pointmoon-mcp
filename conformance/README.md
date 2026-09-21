@@ -18,7 +18,7 @@ node conformance/drill.mjs    # the negative control, entirely offline
 | side | what it is |
 | --- | --- |
 | **published npm artifact** | `npx -y pointmoon-mcp@latest`, driven over stdio like an MCP client. **Not** `bin/pointmoon-mcp.mjs` in this tree — the tree is not what strangers have. |
-| **hosted server** | `https://pointmoon.vercel.app/api/mcp` — `tools/list` and one live `tools/call`. |
+| **hosted server** | `https://pointmoon.ai/api/mcp` — `tools/list` and one live `tools/call`. |
 
 The run goes red, **naming the field**, when the tool name moves, when any input-schema
 property appears on one side and not the other, when a shared property changes `type` or

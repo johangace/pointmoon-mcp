@@ -4,7 +4,7 @@
   "title": "Pointmoon Field Truth",
   "description": "Sourced, time-stamped physical and environmental field-truth for a location — or typed silence.",
   "version": "0.1.0",
-  "websiteUrl": "https://pointmoon.vercel.app/now",
+  "websiteUrl": "https://pointmoon.ai/now",
   "repository": {
     "url": "https://github.com/johangace/pointmoon-mcp",
     "source": "github",
@@ -13,7 +13,7 @@
   "remotes": [
     {
       "type": "streamable-http",
-      "url": "https://pointmoon.vercel.app/api/mcp"
+      "url": "https://pointmoon.ai/api/mcp"
     }
   ],
   "packages": [
@@ -28,7 +28,7 @@
       "environmentVariables": [
         {
           "name": "POINTMOON_BASE_URL",
-          "description": "Override the hosted Pointmoon server the connector talks to. Defaults to https://pointmoon.vercel.app — leave unset unless you run Pointmoon yourself.",
+          "description": "Override the hosted Pointmoon server the connector talks to. Defaults to https://pointmoon.ai — leave unset unless you run Pointmoon yourself.",
           "isRequired": false,
           "isSecret": false,
           "format": "string"
