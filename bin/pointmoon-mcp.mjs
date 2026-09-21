@@ -5,7 +5,7 @@ import readline from 'node:readline'
 const PROTOCOL_VERSION = '2025-03-26'
 // Public default: a stranger's agent reaches real data with no local Pointmoon.
 // Override with POINTMOON_BASE_URL=http://127.0.0.1:3110 for local dev.
-const DEFAULT_BASE_URL = 'https://pointmoon.vercel.app'
+const DEFAULT_BASE_URL = 'https://pointmoon.ai'
 const baseUrl = process.env.POINTMOON_BASE_URL || DEFAULT_BASE_URL
 
 const LOCATION_PROPERTIES = {

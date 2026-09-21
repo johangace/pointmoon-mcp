@@ -7,7 +7,7 @@
 // If you are not building on MCP, you do not need it. `field_truth` is a thin
 // pin over one HTTP GET. The equivalent curl:
 //
-//   curl "https://pointmoon.vercel.app/api/moon?audience=facts&surface=open&lat=42.36&lng=-71.06"
+//   curl "https://pointmoon.ai/api/moon?audience=facts&surface=open&lat=42.36&lng=-71.06"
 //
 // `audience=facts` is the prose-free surface: sourced tokens only, no rendered
 // sentences. `surface=open` keeps the observation sources redistribution-clean.

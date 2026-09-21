@@ -26,7 +26,7 @@ server catalogs. The hosted server is healthy and listable today — `/api/healt
 
 | file | what it is |
 | --- | --- |
-| [`server.json`](./server.json) | The registry payload. Describes **both** distribution paths: the hosted remote at `https://pointmoon.vercel.app/api/mcp` and the npm package `pointmoon-mcp`. |
+| [`server.json`](./server.json) | The registry payload. Describes **both** distribution paths: the hosted remote at `https://pointmoon.ai/api/mcp` and the npm package `pointmoon-mcp`. |
 | [`scripts/registry-preflight.mjs`](./scripts/registry-preflight.mjs) | One command. Validates and reports; never publishes. |
 | `mcpName` in [`package.json`](./package.json) | The npm ownership marker the registry reads. Present in this tree; **not yet in the artifact on npm** — see the gate below. |
 

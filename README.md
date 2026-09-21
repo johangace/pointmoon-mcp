@@ -9,7 +9,7 @@ That is the whole point: a fluent model is good at language and bad at knowing w
 This repo is the open connector and the public field-truth contract. The hosted server does the work — there is nothing to run and no secrets to hold.
 
 - **Run something in five minutes:** [examples/](./examples/)
-- **Live demo:** https://pointmoon.vercel.app/now
+- **Live demo:** https://pointmoon.ai/now
 - **npm:** https://www.npmjs.com/package/pointmoon-mcp
 - **Contract:** [CONTRACT.md](./CONTRACT.md)
 - **MCP Registry:** not listed yet — [REGISTRY.md](./REGISTRY.md) says what is left
@@ -38,7 +38,7 @@ node examples/01-first-call.mjs
 Real output, trimmed:
 
 ```
-Pointmoon @ https://pointmoon.vercel.app
+Pointmoon @ https://pointmoon.ai
 schemaVersion: field-truth@1.1.0
 
 Pointmoon field-truth: 121 sourced signals for 42.36,-71.06 (each carries source/observedAt/ttlMinutes/confidence).
@@ -64,13 +64,13 @@ See [examples/](./examples/).
 
 ## Add it to your MCP client
 
-Every config below points at the hosted server, `https://pointmoon.vercel.app/api/mcp`.
+Every config below points at the hosted server, `https://pointmoon.ai/api/mcp`.
 No key, no account, no OAuth — it is a public read-only surface.
 
 ### Claude Code
 
 ```bash
-claude mcp add --transport http pointmoon https://pointmoon.vercel.app/api/mcp
+claude mcp add --transport http pointmoon https://pointmoon.ai/api/mcp
 ```
 
 Or commit it to your project's `.mcp.json` so your team gets it too:
@@ -80,7 +80,7 @@ Or commit it to your project's `.mcp.json` so your team gets it too:
   "mcpServers": {
     "pointmoon": {
       "type": "http",
-      "url": "https://pointmoon.vercel.app/api/mcp"
+      "url": "https://pointmoon.ai/api/mcp"
     }
   }
 }
@@ -95,7 +95,7 @@ Remote MCP servers are added through the UI, as a **custom connector** — not t
 
 1. Open **Settings** (`Ctrl+,` / `⌘,`) → **Connectors**
 2. **Add** → **Add custom connector**
-3. Paste `https://pointmoon.vercel.app/api/mcp`, then **Add**
+3. Paste `https://pointmoon.ai/api/mcp`, then **Add**
 
 There is no authentication step; Pointmoon needs none.
 
@@ -121,7 +121,7 @@ In `~/.cursor/mcp.json` for every project, or `.cursor/mcp.json` for one:
 {
   "mcpServers": {
     "pointmoon": {
-      "url": "https://pointmoon.vercel.app/api/mcp"
+      "url": "https://pointmoon.ai/api/mcp"
     }
   }
 }
@@ -130,14 +130,14 @@ In `~/.cursor/mcp.json` for every project, or `.cursor/mcp.json` for one:
 ### Any other MCP client
 
 Pointmoon speaks the MCP **Streamable HTTP** transport at
-`https://pointmoon.vercel.app/api/mcp`. Clients that only support stdio can bridge to
+`https://pointmoon.ai/api/mcp`. Clients that only support stdio can bridge to
 it with the `pointmoon-mcp` package above (or any generic stdio-to-HTTP bridge).
 `POINTMOON_BASE_URL` overrides the upstream if you are running Pointmoon yourself.
 
 You can confirm the endpoint answers before wiring anything up:
 
 ```bash
-curl -s https://pointmoon.vercel.app/api/mcp \
+curl -s https://pointmoon.ai/api/mcp \
   -H 'content-type: application/json' \
   -H 'accept: application/json, text/event-stream' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
@@ -148,7 +148,7 @@ curl -s https://pointmoon.vercel.app/api/mcp \
 The same field-truth is one request away. Use `audience=facts` for the prose-free shape:
 
 ```bash
-curl "https://pointmoon.vercel.app/api/moon?audience=facts&surface=open&lat=42.36&lng=-71.06"
+curl "https://pointmoon.ai/api/moon?audience=facts&surface=open&lat=42.36&lng=-71.06"
 ```
 
 ---
@@ -162,7 +162,7 @@ link here; a link to a page that 404s would be worse than this sentence.
 
 The payload is ready: [`server.json`](./server.json) at the repository root validates
 against the current official server schema and describes both ways to run Pointmoon —
-the hosted remote at `https://pointmoon.vercel.app/api/mcp` and the `pointmoon-mcp`
+the hosted remote at `https://pointmoon.ai/api/mcp` and the `pointmoon-mcp`
 package on npm. Check it yourself:
 
 ```bash
