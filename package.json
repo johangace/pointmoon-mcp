@@ -13,7 +13,8 @@
     "examples:drill": "node examples/ci-failure-drill.mjs",
     "conformance": "node conformance/run.mjs",
     "conformance:drill": "node conformance/drill.mjs",
-    "registry:preflight": "node scripts/registry-preflight.mjs"
+    "registry:preflight": "node scripts/registry-preflight.mjs",
+    "eval:openai": "node scripts/openai-selection-eval.mjs"
   },
   "files": [
     "bin/",
