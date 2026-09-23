@@ -380,7 +380,7 @@ async function handleRequest(message) {
       },
       serverInfo: {
         name: 'pointmoon-mcp',
-        version: '0.1.0',
+        version: '0.1.1',
       },
       instructions:
         'Pointmoon grounds agents in the current physical and living world: sourced observational tokens ' +
