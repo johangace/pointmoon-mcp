@@ -12,6 +12,12 @@ This file is a submission aid for the Pointmoon remote MCP plugin. It does not c
 
 **Authentication:** none
 
+**Privacy URL:** https://pointmoon.ai/privacy
+
+**Terms URL:** https://pointmoon.ai/terms
+
+**Support URL:** https://pointmoon.ai/support
+
 **Tool behavior:** read-only; no purchases, writes, messages, account changes or destructive actions.
 
 ## Starter prompts
