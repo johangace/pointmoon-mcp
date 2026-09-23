@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "server": {
+    "label": "pointmoon",
+    "description": "Sourced current physical and living-world field truth for a place, or explicit silence.",
+    "url": "https://pointmoon.ai/api/mcp"
+  },
+  "cases": [
+    {
+      "id": "P1",
+      "kind": "positive",
+      "prompt": "Use Pointmoon to tell me what the physical and living world is doing in Boston right now.",
+      "expectedTool": "field_truth"
+    },
+    {
+      "id": "P2",
+      "kind": "positive",
+      "prompt": "What is actually observable outside around Boston right now? Don’t give me generic seasonal advice.",
+      "expectedTool": "field_truth"
+    },
+    {
+      "id": "P3",
+      "kind": "positive",
+      "prompt": "I’m heading to Hampstead Heath in an hour. Ground my outdoor plan in what is happening there now.",
+      "expectedTool": "field_truth"
+    },
+    {
+      "id": "P4",
+      "kind": "positive",
+      "prompt": "What is the living world doing around Yosemite Valley today?",
+      "expectedTool": "field_truth"
+    },
+    {
+      "id": "P5",
+      "kind": "positive",
+      "prompt": "Is now a good moment for a short walk outside in Boston?",
+      "expectedTool": "step_outside"
+    },
+    {
+      "id": "N1",
+      "kind": "negative",
+      "prompt": "How did New England forests change after European colonization?",
+      "expectedTool": null
+    },
+    {
+      "id": "N2",
+      "kind": "negative",
+      "prompt": "What species is in this photo?",
+      "expectedTool": null
+    },
+    {
+      "id": "N3",
+      "kind": "negative",
+      "prompt": "Find three coffee shops near Hampstead Heath.",
+      "expectedTool": null
+    }
+  ]
+}
