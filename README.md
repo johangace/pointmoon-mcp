@@ -2,12 +2,14 @@
 
 **Ground truth for agents acting in the physical world. Sourced, time-stamped, or silent.**
 
-Pointmoon is an agent-callable trust layer. Give it a coordinate (or a place name) and it returns sourced, current physical and environmental field-truth: weather, air quality, light and sky, water, terrain, notable natural events. Every fact it returns carries its own provenance — which provider observed it (`source`), when (`observedAt`), how long it stays fresh (`ttlMinutes`), and a `confidence` score. When a fact is unknown, stale, or low-confidence, Pointmoon returns **typed silence with a reason** instead of inventing a value.
+Pointmoon is an agent-callable trust layer. Give it a coordinate (or a place name) and it returns sourced, current physical and living-world field-truth: weather, air quality, light and sky, season and phenology, nearby wildlife observations, water, terrain, and notable natural events. Every fact it returns carries its own provenance — which provider observed it (`source`), when (`observedAt`), how long it stays fresh (`ttlMinutes`), and a `confidence` score. When a fact is unknown, stale, or low-confidence, Pointmoon returns **typed silence with a reason** instead of inventing a value.
 
 That is the whole point: a fluent model is good at language and bad at knowing whether it is making the weather up. Pointmoon refuses to hallucinate about physical reality. It hands your model sourced observational tokens to phrase in its own words, or it tells you, explicitly, that it does not know. The trust envelope and the honest silence are the product. Pointmoon grounds; your model speaks.
 
 This repo is the open connector and the public field-truth contract. The hosted server does the work — there is nothing to run and no secrets to hold.
 
+- **Agent quickstart:** https://pointmoon.ai/agents
+- **OpenAI integration:** [OPENAI.md](./OPENAI.md)
 - **Run something in five minutes:** [examples/](./examples/)
 - **Live demo:** https://pointmoon.ai/now
 - **npm:** https://www.npmjs.com/package/pointmoon-mcp
@@ -126,6 +128,20 @@ In `~/.cursor/mcp.json` for every project, or `.cursor/mcp.json` for one:
   }
 }
 ```
+
+### OpenAI — Responses, Agents, ChatGPT and Codex
+
+The same public remote MCP can be used directly by OpenAI agent surfaces; there is no
+Pointmoon-specific SDK or proxy to install.
+
+Start with [OPENAI.md](./OPENAI.md). The canonical remote endpoint is still:
+
+```
+https://pointmoon.ai/api/mcp
+```
+
+The public Plugin submission is being prepared against this same endpoint. It should not
+grow a second backend merely for directory distribution.
 
 ### Any other MCP client
 

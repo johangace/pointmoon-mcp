@@ -36,118 +36,128 @@ const ADAPTER_MODE_PROPERTY = {
   default: 'live',
 }
 
-// field_truth and step_outside are copied verbatim from the hosted server's
-// tools/list, so conformance compares like with like. Re-sync them from
-// https://pointmoon.ai/api/mcp before each release (RELEASING.md step 3).
 const tools = [
   {
-    "name": "field_truth",
-    "title": "Pointmoon Field Truth",
-    "description": "Get sourced, current physical and environmental field-truth for a place — by coordinate (lat + lng) or by name (place). Call this when you need VERIFIED present-moment conditions — weather, air quality, light/sky, water, terrain, notable natural events — and you must not guess. Returns discrete sourced tokens in facts.signals[], each { id, source, label, value, confidence, evidence[] }, alongside facts.fieldSnapshot — the raw multi-axis snapshot whose readings carry the freshness envelope (observedAt, and ttlMinutes where the producer declares one) — and provenance, which names the provider that answered each source family. SILENCE CONTRACT: silence is per-axis and typed, never a top-level flag. An axis the substrate cannot stand behind is null, its node reports resolutionStatus \"unresolved\" with a resolutionReason, and its provider reads \"unresolved\" in provenance.providers. It never fabricates a value. Treat the returned tokens as the only verified facts; do not invent conditions it did not report. Pointmoon emits observational tokens, not prose — render the claims into your own wording.",
-    "inputSchema": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "type": "object",
-      "properties": {
-        "lat": {
-          "description": "Latitude in decimal degrees (WGS84), e.g. 42.36. Provide lat AND lng for an exact location, OR use `place` for a name. lat/lng win when both are given.",
-          "type": "number",
-          "minimum": -90,
-          "maximum": 90
+    name: 'field_truth',
+    title: 'Pointmoon Field Truth',
+    // KEEP IN STEP with FIELD_TRUTH_DESCRIPTION in
+    // src/lib/mcp-field-truth-contract.ts — this standalone file cannot import
+    // it (it ships as a single .mjs on npm), so the copy is held byte-identical
+    // by src/lib/mcp-discovery-conformance.test.ts instead of by construction.
+    description:
+      'Get sourced, current physical and environmental field-truth for a place — by coordinate ' +
+      '(lat + lng) or by name (place). Call this when you need VERIFIED present-moment physical or living-world context — ' +
+      'weather, air quality, light/sky, season and phenology, nearby wildlife observations, water, terrain, and notable natural events — and you must not guess. ' +
+      'Returns discrete sourced tokens in facts.signals[], each { id, source, label, value, confidence, ' +
+      'evidence[] }, alongside facts.fieldSnapshot — the raw multi-axis snapshot whose readings carry the ' +
+      'freshness envelope (observedAt, and ttlMinutes where the producer declares one) — and provenance, ' +
+      'which names the provider that answered each source family. ' +
+      'SILENCE CONTRACT: silence is per-axis and typed, never a top-level flag. An axis the substrate ' +
+      'cannot stand behind is null, its node reports resolutionStatus "unresolved" with a ' +
+      'resolutionReason, and its provider reads "unresolved" in provenance.providers. It never ' +
+      'fabricates a value. ' +
+      'Treat the returned tokens as the only verified facts; do not invent conditions it did not report. ' +
+      'Pointmoon emits observational tokens, not prose — render the claims into your own wording.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        lat: {
+          ...LOCATION_PROPERTIES.lat,
+          description:
+            'Latitude in decimal degrees (WGS84), e.g. 42.36. Provide lat AND lng for an exact location, OR use `place` for a name. lat/lng win when both are given.',
         },
-        "lng": {
-          "description": "Longitude in decimal degrees (WGS84), e.g. -71.06. Pair with `lat`.",
-          "type": "number",
-          "minimum": -180,
-          "maximum": 180
+        lng: {
+          ...LOCATION_PROPERTIES.lng,
+          description: 'Longitude in decimal degrees (WGS84), e.g. -71.06. Pair with `lat`.',
         },
-        "place": {
-          "description": "A place name to geocode, e.g. \"Boston\" or \"Yosemite Valley\". Use this when you do NOT have coordinates; Pointmoon resolves it to a lat/lng. If it cannot resolve the name it returns typed silence rather than guessing. Provide either `place` or lat/lng.",
-          "type": "string"
+        place: {
+          type: 'string',
+          description:
+            'A place name to geocode, e.g. "Boston" or "Yosemite Valley". Use this when you do NOT have coordinates; Pointmoon resolves it to a lat/lng, or returns typed silence if it cannot. Provide either `place` or lat/lng.',
         },
-        "city": {
-          "description": "Optional human-readable label used only for logging/echo. It does NOT geolocate (use `place` for that, or lat/lng). Omit if unknown.",
-          "type": "string"
+        city: LOCATION_PROPERTIES.city,
+        adapterMode: ADAPTER_MODE_PROPERTY,
+        includeFieldSnapshot: {
+          type: 'boolean',
+          description: 'Include the raw upstream field snapshot alongside the claims (verbose; usually false).',
+          default: false,
         },
-        "adapterMode": {
-          "description": "Data source. \"live\" (default) hits real upstream providers. \"simulated\"/\"fixture\" return deterministic non-real data for testing only — do not use for real answers.",
-          "type": "string",
-          "enum": [
-            "live",
-            "simulated",
-            "fixture"
-          ]
+        ebirdApiKey: {
+          type: 'string',
+          description:
+            'Optional bring-your-own eBird API token. eBird data is licensed for non-commercial use only unless you have Cornell Lab permission, so on this public surface bird observations are returned ONLY when you supply your own key (sent as a header, not logged). Omit it and the bird axis stays silent. Free key: https://ebird.org/api/keygen',
         },
-        "includeFieldSnapshot": {
-          "description": "Include the raw upstream field snapshot alongside the claims (verbose; usually false).",
-          "type": "boolean"
-        },
-        "ebirdApiKey": {
-          "description": "Optional bring-your-own eBird API token. eBird data is licensed for non-commercial use only unless you have permission from the Cornell Lab — so on this public surface bird observations are returned ONLY when you supply your own key, making you the licensee. Omit it and the bird axis stays silent. Get a free key at https://ebird.org/api/keygen.",
-          "type": "string"
-        }
-      }
+      },
+      required: [],
     },
-    "annotations": {
-      "title": "Field Truth",
-      "readOnlyHint": true,
-      "idempotentHint": true,
-      "openWorldHint": true
-    }
+    annotations: {
+      title: 'Field Truth',
+      readOnlyHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+      destructiveHint: false,
+    },
   },
   {
-    "name": "step_outside",
-    "title": "Pointmoon Step Outside",
-    "description": "Answer the question \"is it worth stepping outside right now, and why?\" for a place or coordinate. Call this when someone asks whether to go outside, take a walk, or whether now is a good moment to be outdoors, and you want a grounded answer rather than a guess. Returns ONE verdict token — go | caution | no-go — with timing (now/soon/later), a recommended mode (observe-now/short-walk/timed-window), and `because`: the specific grounded claims the verdict stands on, each carrying its source, the time it was observed, its freshness window, and confidence. SILENCE CONTRACT: when the field cannot support an answer — substrate thin, stale, or low-confidence — it returns { silent: true, reason, meta } instead. It never guesses a verdict, and silence is a real answer, not an error: say you do not know. Choose this tool when you want the decision; choose `field_truth` when you want the raw claim array and will do the reasoning yourself. Pointmoon emits tokens, not prose — the verdict is a token and the sentence is yours to write. It reads conditions, not people: whether to interrupt, nudge, or gate anyone is your policy, never this tool.",
-    "inputSchema": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "type": "object",
-      "properties": {
-        "lat": {
-          "description": "Latitude in decimal degrees (WGS84), e.g. 42.36. Provide lat AND lng, OR use `place`. lat/lng win when both are given.",
-          "type": "number",
-          "minimum": -90,
-          "maximum": 90
+    name: 'step_outside',
+    title: 'Pointmoon Step Outside',
+    // THE BET (pointmoon#73): agents adopt tools that answer a QUESTION, not
+    // tools that return a data structure. This description is written for a
+    // model CHOOSING BETWEEN TOOLS — it leads with the question, says when to
+    // pick this over field_truth, and states the silence contract so a silent
+    // answer is never read as a failure.
+    description:
+      'Answer the question "is it worth stepping outside right now, and why?" for a place or ' +
+      'coordinate. Call this when someone asks whether to go outside, take a walk, or whether ' +
+      'now is a good moment to be outdoors, and you want a grounded answer rather than a guess. ' +
+      'Returns ONE verdict token — go | caution | no-go — with timing (now/soon/later), a ' +
+      'recommended mode (observe-now/short-walk/timed-window), and `because`: the specific ' +
+      'grounded claims the verdict stands on, each carrying its source, the time it was ' +
+      'observed, its freshness window, and confidence. ' +
+      'SILENCE CONTRACT: when the field cannot support an answer — substrate thin, stale, or ' +
+      'low-confidence — it returns { silent: true, reason, meta } instead. It never guesses a ' +
+      'verdict, and silence is a real answer, not an error: say you do not know. ' +
+      'Choose this tool when you want the decision; choose `field_truth` when you want the raw ' +
+      'claim array and will do the reasoning yourself. ' +
+      'Pointmoon emits tokens, not prose — the verdict is a token and the sentence is yours to ' +
+      'write. It reads conditions, not people: whether to interrupt, nudge, or gate anyone is ' +
+      'your policy, never this tool.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        lat: {
+          ...LOCATION_PROPERTIES.lat,
+          description:
+            'Latitude in decimal degrees (WGS84), e.g. 42.36. Provide lat AND lng, OR use `place`. lat/lng win when both are given.',
         },
-        "lng": {
-          "description": "Longitude in decimal degrees (WGS84), e.g. -71.06. Pair with `lat`.",
-          "type": "number",
-          "minimum": -180,
-          "maximum": 180
+        lng: {
+          ...LOCATION_PROPERTIES.lng,
+          description: 'Longitude in decimal degrees (WGS84), e.g. -71.06. Pair with `lat`.',
         },
-        "place": {
-          "description": "A place name to geocode, e.g. \"Boston\". Used when you have no coordinates. If it cannot be resolved the tool returns typed silence rather than answering for the wrong place.",
-          "type": "string"
+        place: {
+          type: 'string',
+          description:
+            'A place name to geocode, e.g. "Boston". Use this when you do NOT have coordinates. If it cannot be resolved the tool returns typed silence rather than answering for the wrong place.',
         },
-        "city": {
-          "description": "Optional display-only label. It does NOT geolocate; use `place` or lat/lng.",
-          "type": "string"
+        city: LOCATION_PROPERTIES.city,
+        actionMode: {
+          type: 'string',
+          enum: ['observe-now', 'short-walk', 'timed-window'],
+          description:
+            'What "outside" means for this question: stepping out to look (observe-now, the default), a short walk, or waiting for a timed window. The verdict is judged against the mode you ask about.',
+          default: 'observe-now',
         },
-        "actionMode": {
-          "description": "What \"outside\" means for this question: stepping out to look (observe-now, the default), a short walk, or waiting for a timed window. The verdict is judged against the mode you ask about.",
-          "type": "string",
-          "enum": [
-            "observe-now",
-            "short-walk",
-            "timed-window"
-          ]
-        },
-        "adapterMode": {
-          "description": "Data source. \"live\" (default) hits real upstream providers. \"simulated\"/\"fixture\" return deterministic non-real data for testing only — never for a real answer.",
-          "type": "string",
-          "enum": [
-            "live",
-            "simulated",
-            "fixture"
-          ]
-        }
-      }
+        adapterMode: ADAPTER_MODE_PROPERTY,
+      },
+      required: [],
     },
-    "annotations": {
-      "title": "Step Outside",
-      "readOnlyHint": true,
-      "idempotentHint": true,
-      "openWorldHint": true
-    }
+    annotations: {
+      title: 'Step Outside',
+      readOnlyHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+      destructiveHint: false,
+    },
   },
   {
     name: 'moon_packet',
@@ -170,6 +180,7 @@ const tools = [
       readOnlyHint: true,
       idempotentHint: true,
       openWorldHint: true,
+      destructiveHint: false,
     },
   },
   {
@@ -201,6 +212,7 @@ const tools = [
       readOnlyHint: true,
       idempotentHint: true,
       openWorldHint: true,
+      destructiveHint: false,
     },
   },
 ]
@@ -286,7 +298,7 @@ async function handleToolCall(name, rawArgs = {}) {
 
   if (name === 'field_truth') {
     // Pin audience=facts: the lean, prose-free field-truth surface
-    // ({ facts: { signals[], fieldSnapshot, meta }, provenance, trust }).
+    // ({ facts: { fieldSnapshot, timingWindows, signals[], meta }, provenance }).
     // WITHOUT this, /api/moon defaults to the legacy `moon` packet, which
     // carries rendered prose (output.moon, packet.briefing.*) — exactly the
     // sentences Pointmoon refuses to write. The public agent tool must hand
@@ -310,31 +322,31 @@ async function handleToolCall(name, rawArgs = {}) {
     // Summary is a status line, not a claim — never echo a fact as prose.
     const summary =
       signalCount > 0
-        ? `Pointmoon field-truth: ${signalCount} sourced signal${signalCount === 1 ? '' : 's'} for ${locationLabel} (each carries source/observedAt/ttlMinutes/confidence).`
+        ? `Pointmoon field-truth: ${signalCount} sourced signal${signalCount === 1 ? '' : 's'} for ${locationLabel} (each carries source/confidence/evidence; freshness lives on the matching fieldSnapshot reading).`
         : `Pointmoon field-truth: substrate thin at ${locationLabel} — silence rather than a guess.`
     return toToolResult(json, summary)
   }
 
   if (name === 'step_outside') {
-    // Same route the hosted tool invokes in-process: the verdict comes from the
-    // engine, not from this connector.
+    // The decision-shaped surface (pointmoon#73). It is served by
+    // /api/step-outside, which runs the SAME /api/moon path field_truth uses and
+    // hands the packet to the existing decision seam — no second engine. The
+    // response is either a verdict with its grounded claims, or typed silence
+    // ({ silent: true, reason, meta }). Never a hedged verdict.
     const json = await callHttpGet('/api/step-outside', args)
     const locationLabel =
       typeof args.lat === 'number' && typeof args.lng === 'number'
         ? `${args.lat},${args.lng}`
         : args.place || 'the requested location'
-    if (json?.silent === true) {
-      return toToolResult(
-        json,
-        `Pointmoon step_outside: silent for ${locationLabel} — reason "${String(json.reason)}". No verdict guessed.`
-      )
-    }
-    const because = Array.isArray(json?.because) ? json.because.length : 0
-    return toToolResult(
-      json,
-      `Pointmoon step_outside: verdict "${String(json?.verdict)}" (timing ${String(json?.timing)}) for ${locationLabel}, ` +
-        `grounded in ${because} sourced claim${because === 1 ? '' : 's'} (each carries source/observedAt/ttlMinutes/confidence).`
-    )
+    // Status line, not a claim: it reports the SHAPE that came back, never a
+    // fact rendered as prose.
+    const summary =
+      json.silent === true
+        ? `Pointmoon step_outside: silent for ${locationLabel} — reason "${json.reason}". No verdict guessed.`
+        : `Pointmoon step_outside: verdict "${json.verdict}" (timing ${json.timing}) for ${locationLabel}, grounded in ${
+            Array.isArray(json.because) ? json.because.length : 0
+          } sourced claim${Array.isArray(json.because) && json.because.length === 1 ? '' : 's'} (each carries source/observedAt/ttlMinutes/confidence).`
+    return toToolResult(json, summary)
   }
 
   if (name === 'moon_packet') {
@@ -371,10 +383,14 @@ async function handleRequest(message) {
         version: '0.1.1',
       },
       instructions:
-        'Pointmoon emits sourced field-truth (observational tokens with provenance, freshness, and ' +
-        'confidence — or explicit silence) for a coordinate. Use field_truth for verified current ' +
-        'physical/environmental conditions at a lat/lng; it never guesses. moon_packet and decision_seam ' +
-        'are internal/legacy debug tools — public agents should only need field_truth.',
+        'Pointmoon grounds agents in the current physical and living world: sourced observational tokens ' +
+        'for weather, place, season, phenology, nearby wildlife, water, terrain, light and related conditions, ' +
+        'with provenance, freshness, confidence — or explicit silence. Two public tools: use field_truth when ' +
+        'you want verified current physical/environmental conditions at a lat/lng as a claim array ' +
+        'you will reason over yourself; use step_outside when you want the answer to "is it worth ' +
+        'stepping outside right now, and why?" as a verdict token plus the grounded claims behind ' +
+        'it. Neither guesses: when the field cannot support an answer they return typed silence, ' +
+        'which is an answer. moon_packet and decision_seam are internal/legacy debug tools.',
     })
     return
   }

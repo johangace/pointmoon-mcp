@@ -4,83 +4,78 @@
 this repository contains no publish step, no release trigger, no `NODE_AUTH_TOKEN` and
 no `secrets.*` reference. That absence is the design, not an omission — do not add one.**
 
+There is **no credential-rotation prerequisite**. Use a valid founder-controlled npm
+publishing credential or supported npm authentication method at publish time. Publishing
+credentials stay outside this repository and CI.
+
 ---
-
-## The gate
-
-**Publishing is gated on a credential rotation that has not happened yet.** Until the
-founder has rotated the publish credential, nothing may be published — including a
-release that is otherwise ready. That rotation is tracked privately, not in this public
-repository.
-
-So the release stops here, on purpose: the conformance check
-([`conformance/`](./conformance/)) proves whether a republish is *needed*, and this file
-says what a founder must do, in order, when the credential is clean. It does not do it.
 
 ## What conformance says right now
 
-As of **2026-09-01**, `pointmoon-mcp@0.1.0` (published 2026-06-17, 76 days earlier)
-**still matches** the hosted `field-truth@1.1.0` contract on everything that governs a
-call: the `field_truth` tool name, all seven input-schema properties, the live envelope
-shape, the trust block and the typed-silence contract. Nothing is broken for anyone who
-installed it.
+As of **2026-09-23**, the published `pointmoon-mcp@0.1.0` artifact is behind the hosted
+server.
 
-What *has* drifted is agent-facing prose. Four input-property descriptions —
-`place`, `city`, `adapterMode`, `ebirdApiKey` — read differently on the two sides. Agents
-choose tools and arguments by that text, so a republish is warranted, but it is a
-freshness release rather than a break. `conformance/run.mjs` reports these as notes and
-does not fail the build for them; run it to see the current diff.
+The important measured drift is:
 
-## The order, when the credential is clean
+- hosted MCP advertises `field_truth` **and** `step_outside`;
+- published `0.1.0` does not yet advertise `step_outside`;
+- agent-facing descriptions have also moved;
+- the hosted and published `field_truth` input shape still agrees on the seven public
+  inputs.
 
-1. **Rotate the npm publish credential** (founder; the previous one must be revoked, not
-   merely replaced). Nothing below may happen first.
-2. **Run the drill, then the conformance check, locally:**
+That means a republish is required before the package and hosted server can be considered
+conformant again. The failing published-artifact conformance check is useful evidence of
+that drift; do not weaken it to make a release PR green.
+
+## Release order
+
+1. **Run the negative-control drill and current published-artifact conformance:**
    ```bash
    node conformance/drill.mjs   # must exit 0 — proves the check can go red
-   node conformance/run.mjs     # against the CURRENTLY published package
+   node conformance/run.mjs     # measures CURRENT published artifact vs hosted server
    ```
-   Read the notes. They are the diff a republish would close.
-3. **Bring `bin/pointmoon-mcp.mjs` into line with the hosted server** for anything the
-   conformance run reported — including the description notes, which are the point of a
-   freshness release. Do not change the tool surface itself; that is a contract change
-   and belongs upstream in the engine, not here.
-4. **Bump `version` in `package.json`** (patch for a freshness release; minor if the
-   input surface gained anything). Update the `serverInfo.version` string in
-   `bin/pointmoon-mcp.mjs` in the same commit — it is hand-maintained and will otherwise
-   report the old number to every client.
-5. **Confirm what would ship:**
+   The second command may exit non-zero before a release when the published artifact is
+   genuinely behind. Read the named drift; do not paper it over.
+
+2. **Bring `bin/pointmoon-mcp.mjs` into line with the hosted public server** for the
+   intended release: public tool list, descriptions, annotations and initialize metadata.
+   Do not invent a connector-only public contract.
+
+3. **Keep version metadata in step.** Update `package.json`,
+   `bin/pointmoon-mcp.mjs`'s `serverInfo.version`, and `server.json` together.
+
+4. **Confirm what would ship:**
    ```bash
    npm pack --dry-run
    ```
-   Expect exactly five files — `package.json`, `README.md`, `CONTRACT.md`, `LICENSE`
-   and `bin/pointmoon-mcp.mjs`. `conformance/`, `examples/` and this file are repo-only
-   and must not appear in the tarball. (Note that the published `0.1.0` tarball has only
-   three: it predates `CONTRACT.md` and the current `LICENSE`, so a republish also
-   delivers the public contract document to anyone who installs.)
-6. **Publish** (founder, with the rotated token):
+   Expect the public package files only. Conformance fixtures, examples and this release
+   note are repo tooling and should not accidentally become runtime dependencies.
+
+5. **Publish** — founder action, using valid npm publish access:
    ```bash
    npm publish --access public
    ```
-7. **Re-run conformance against the new artifact**, which now resolves to the version
-   just published:
+
+6. **Re-run conformance against the newly published artifact:**
    ```bash
    node conformance/run.mjs
    ```
-   Expect zero notes and zero drifts. This is the only evidence that the republish
-   actually closed the gap.
-8. **Update the "Verified against the hosted contract" section of
-   [`README.md`](./README.md)** with the new version, the contract version and the date,
-   and tag the release.
-9. **Then, and only then, the MCP Registry listing becomes possible.** The registry
-   verifies npm ownership by reading `mcpName` out of the *published* `package.json`;
-   the artifact on npm today predates that field, so the republish above is what unblocks
-   it. Pick up at step 3 of [`REGISTRY.md`](./REGISTRY.md).
+   Expect zero release-blocking drift. This is the evidence that the public package and
+   hosted server agree.
+
+7. **Update the "Verified against the hosted contract" section of
+   [`README.md`](./README.md)** with the new version, contract version and date, and tag
+   the release.
+
+8. **Then complete the MCP Registry publication steps** in
+   [`REGISTRY.md`](./REGISTRY.md). The registry verifies npm ownership using the
+   `mcpName` carried by the published package, so the fresh package must exist first.
 
 ## Why there is no CI publish job
 
-`pointmoon-mcp` has one job on npm: to be the thing a stranger installs and trust. A
-publish step in CI would mean this repository holds a credential that can overwrite that
-artifact, and that credential must stay outside CI. A human deciding to publish, with a
-freshly rotated token, is the control. Automating it removes the control and adds
-nothing: releases here are rare and deliberate.
+`pointmoon-mcp` is something strangers install and trust. Publishing remains an
+explicit founder-controlled action rather than a repository side effect.
+
+That control does **not** require routine credential rotation. It requires only that the
+publishing authentication be valid, appropriately controlled, and kept out of source
+control/CI unless the release policy is deliberately changed later.
