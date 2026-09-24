@@ -9,6 +9,24 @@ The governing principle: **Pointmoon emits sourced observational tokens with pro
 freshness, and confidence — or typed silence. It does not write prose, and it does not
 guess.** Every field below is answerable to that.
 
+Longer-form contracts live on the engine, on `main`. Use these when this envelope
+description is not enough. There is no `/docs` route on https://pointmoon.vercel.app;
+these GitHub blob URLs are the same stable paths the product site already uses.
+
+| Topic | Engine doc |
+| --- | --- |
+| Season reading | [`docs/SEASON.md`](https://github.com/johangace/pointmoon/blob/main/docs/SEASON.md) |
+| eBird bring-your-own key | [`docs/EBIRD.md`](https://github.com/johangace/pointmoon/blob/main/docs/EBIRD.md) |
+| Teachable doorway | [`docs/TEACHABLE_DOORWAY.md`](https://github.com/johangace/pointmoon/blob/main/docs/TEACHABLE_DOORWAY.md) |
+| Envelope / API | [`docs/API_REFERENCE.md`](https://github.com/johangace/pointmoon/blob/main/docs/API_REFERENCE.md) |
+| Silence | [`docs/SILENCE_CONTRACT.md`](https://github.com/johangace/pointmoon/blob/main/docs/SILENCE_CONTRACT.md) |
+| MCP wiring | [`docs/MCP_SERVER.md`](https://github.com/johangace/pointmoon/blob/main/docs/MCP_SERVER.md) |
+| All engine docs | [`docs/`](https://github.com/johangace/pointmoon/tree/main/docs) |
+
+Season, eBird, and teachable doorway are summarized after the envelope so a
+consumer landing here does not have to hunt the engine repo blindly. They do
+not replace those docs.
+
 ---
 
 ## Response envelope
@@ -113,6 +131,70 @@ An array of licensing and attribution notices for the sources that contributed t
 response. Each notice identifies a `source` and the attribution or license terms that
 apply. Consumers that display or redistribute Pointmoon data are responsible for honoring
 these notices.
+
+---
+
+## Season
+
+Season is a field-truth reading, not a guess. Pointmoon uses one meteorological
+definition, derived in the location's timezone. On the `audience=facts` envelope,
+read it from these three places — they agree:
+
+- `facts.meta.season`
+- `facts.fieldSnapshot.time.season`
+- the `nature.season` signal in `facts.signals[]`
+
+Responses that also contain `axes.time.calendar.season` use the same canonical
+label after pointmoon#370. Prefer the facts token in a facts-oriented consumer,
+and check `seasonDefinition: "meteorological"` rather than inferring a boundary
+rule from the label alone.
+
+Phenology (`facts.fieldSnapshot.phenology`, signals under `nature.phenology.*`) is a
+separate domain: what is happening in the living year, not the calendar season token.
+When seasonal expectation and the current field are not aligned,
+`facts.fieldSnapshot.conflicts.seasonMismatch` is a typed conflict, not a second
+season value.
+
+Hemisphere, which token to trust, and how mismatch is declared are specified in the
+engine season contract:
+[`docs/SEASON.md`](https://github.com/johangace/pointmoon/blob/main/docs/SEASON.md).
+
+---
+
+## eBird bring-your-own key
+
+eBird data is licensed for non-commercial use unless you have permission from the
+Cornell Lab. On this public surface, bird observations from eBird are returned **only**
+when the caller supplies their own key. The token authenticates the caller's eBird
+account; it does not by itself approve Pointmoon proxying, display, commercial use,
+or redistribution. Confirm the intended production use with Cornell.
+
+- MCP: pass `ebirdApiKey` on `field_truth`.
+- HTTP: send it as the `x-ebird-api-token` header. Never as a query parameter — it
+  must stay out of URL logs. The hosted server and this connector never log the token.
+- Omit the key and the eBird axis stays silent. That is typed silence, not an error.
+- Free key: https://ebird.org/api/keygen
+
+The licensing, header, and silence rules in full:
+[`docs/EBIRD.md`](https://github.com/johangace/pointmoon/blob/main/docs/EBIRD.md).
+
+---
+
+## Teachable doorway
+
+A teachable doorway is a ranked reading over field-truth: what existing token is
+worth teaching from at a place (a species, weather shift, or weather phenomenon).
+It never authors a lesson or invents ecology. The engine implements it as the
+read-only `teachable_doorways` MCP tool in pointmoon#374.
+
+Availability is deployment-dependent. Check the hosted server's `tools/list`; call
+`teachable_doorways` only when it is advertised. Before that deployment is live,
+public agents use `field_truth` and read the facts envelope. The published
+`pointmoon-mcp` package may also lag the hosted tool list until it is republished,
+which the conformance gate reports rather than hiding.
+
+The doorway contract:
+[`docs/TEACHABLE_DOORWAY.md`](https://github.com/johangace/pointmoon/blob/main/docs/TEACHABLE_DOORWAY.md).
 
 ---
 
