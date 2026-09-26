@@ -29,11 +29,12 @@ const EXAMPLES = [
   '02-by-place-name.mjs',
   '03-typed-silence.mjs',
   '04-plain-http.mjs',
+  '05-world-responsive.mjs',
 ]
 
-function run(file) {
+function run(file, testMode = false) {
   return new Promise((resolve) => {
-    const child = spawn(process.execPath, [path.join(here, file)], { stdio: 'inherit' })
+    const child = spawn(process.execPath, [...(testMode ? ['--test'] : []), path.join(here, file)], { stdio: 'inherit' })
     child.on('close', (code) => resolve(code ?? 1))
     child.on('error', () => resolve(1))
   })
@@ -68,6 +69,10 @@ try {
   failures.push('tool surface check')
 }
 
+if (await run('world-responsive/context.test.mjs', true) !== 0) {
+  failures.push('responsive-content unit tests')
+}
+
 for (const file of EXAMPLES) {
   console.log(`${'='.repeat(70)}\n${file}\n${'='.repeat(70)}`)
   const code = await run(file)
@@ -81,8 +86,8 @@ for (const file of EXAMPLES) {
 
 console.log('='.repeat(70))
 if (failures.length > 0) {
-  console.error(`FAILED: ${failures.length}/${EXAMPLES.length + 1} checks did not return claims:`)
+  console.error(`FAILED: ${failures.length}/${EXAMPLES.length + 2} checks failed:`)
   for (const f of failures) console.error(`  - ${f}`)
   process.exit(1)
 }
-console.log(`All ${EXAMPLES.length} examples returned sourced claims.`)
+console.log(`All ${EXAMPLES.length} examples returned sourced claims; responsive-content unit tests passed.`)
