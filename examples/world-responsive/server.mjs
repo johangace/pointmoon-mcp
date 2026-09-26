@@ -4,6 +4,13 @@ import { createServer } from 'node:http'
 import { pathToFileURL } from 'node:url'
 import { fetchContext, projectWeather, renderDisplay, syntheticPayload } from './context.mjs'
 
+const LOOPBACK = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1'])
+
+/** Even an exported server accidentally bound to all interfaces refuses remote peers. */
+export function isLoopbackSocket(socket) {
+  return LOOPBACK.has(socket?.localAddress) && LOOPBACK.has(socket?.remoteAddress)
+}
+
 export function createDisplayServer({ demo = false, lat = 42.36, lng = -71.06, baseUrl, apiKey, fetcher, now = Date.now } = {}) {
   let cache = null
   let refreshAt = 0
@@ -21,7 +28,8 @@ export function createDisplayServer({ demo = false, lat = 42.36, lng = -71.06, b
     return pending
   }
   return createServer(async (req, res) => {
-    // Bound to loopback below. Host validation also avoids a DNS-rebinding proxy.
+    // Validate socket addresses as well as Host: headers alone cannot prove locality.
+    if (!isLoopbackSocket(res.socket)) { res.writeHead(403); res.end('Local demo only'); return }
     const allowedHosts = new Set(['127.0.0.1', 'localhost', '[::1]'].map((host) => `${host}:${res.socket.localPort}`))
     if (!allowedHosts.has(req.headers.host)) { res.writeHead(403); res.end('Local demo only'); return }
     if (req.method !== 'GET' || req.url !== '/') { res.writeHead(404); res.end('Not found'); return }

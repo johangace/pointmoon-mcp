@@ -41,6 +41,7 @@ or pass your own to `selectCard(context, cards)`:
 const cards = [{
   id: 'my-collection', title: 'My collection', text: 'My own content.',
   matches: (context) => context.weather.temperatureC >= 20,
+  evidencePaths: ['facts.fieldSnapshot.weather.current.temperatureC'],
 }]
 const chosen = selectCard(context, cards)
 ```
@@ -48,7 +49,8 @@ const chosen = selectCard(context, cards)
 An extension is just a pure function in your application. It keeps its own
 selection/output separate from Pointmoon's evidence; it does not overwrite the
 source's confidence, timestamps or missing-data states. Nothing is uploaded to
-run inside Pointmoon.
+run inside Pointmoon. Each selector can declare its own `evidencePaths`; when
+dependencies are not declared, that metadata is omitted rather than guessed.
 
 The live example uses a fixed public coordinate. Change `lat` and `lng` when
 calling `createDisplayServer` to use your own intended location. Do not publish
@@ -57,7 +59,9 @@ private locations in examples or commit them as test fixtures.
 ## Boundaries
 
 This is a **local developer demonstration**, not a production reverse proxy.
-It binds to loopback, accepts only `/`, checks the Host header, and coalesces
+The CLI binds to loopback; the exported server also verifies both local and
+remote socket addresses, so accidentally binding it broadly does not admit remote
+requests. It accepts only `/`, checks the Host header, and coalesces
 requests. Live fetches are cached for at most a minute and the source freshness
 is checked on every render. It does not accept arbitrary user-provided locations
 or remote URLs. The API key stays in server memory and is never sent to the page.

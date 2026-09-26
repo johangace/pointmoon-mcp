@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { once } from 'node:events'
 import { get } from 'node:http'
 import { fetchContext, projectWeather, renderDisplay, selectCard, syntheticPayload } from './context.mjs'
-import { createDisplayServer } from './server.mjs'
+import { createDisplayServer, isLoopbackSocket } from './server.mjs'
 const NOW = Date.parse('2026-09-26T12:00:00Z')
 const payload = (changes = {}) => {
   const result = syntheticPayload(NOW, 25)
@@ -16,9 +16,11 @@ test('project only supported weather; retain notices', () => {
   assert.equal(context.status, 'current')
   assert.equal(context.weather.temperatureC, 25)
   assert.deepEqual(context.notices, p.notices)
+  assert.equal(context.notices.attributionRequired, false)
+  assert.equal(context.notices.sources[0].source, 'synthetic-example')
 })
 for (const [change, reason] of [
-  [{ ttlMinutes: null }, 'unknown-freshness'], [{ ttlMinutes: 0 }, 'unknown-freshness'],
+  [{ ttlMinutes: null }, 'unknown-freshness'], [{ ttlMinutes: 1e20 }, 'unknown-freshness'], [{ ttlMinutes: 0 }, 'unknown-freshness'],
   [{ observedAt: 'bad' }, 'unknown-freshness'], [{ observedAt: '2026-09-27T12:00:00Z' }, 'future-reading'],
   [{ observedAt: '2026-09-25T12:00:00Z' }, 'stale'], [{ source: '' }, 'missing-source'],
   [{ temperatureC: '25' }, 'missing-temperature'], [{ temperatureC: NaN }, 'missing-temperature'],
@@ -42,6 +44,7 @@ test('application selects different authored content; no source mutation', () =>
 test('developer can supply an independent selector', () => {
   const result = selectCard(projectWeather(payload(), NOW), [{ id: 'custom', title: 'Custom', text: 'My content', matches: () => true }])
   assert.equal(result.id, 'custom'); assert.equal(result.selectedBy, 'application-rule')
+  assert.equal('evidencePaths' in result, false)
 })
 test('display escapes upstream strings and labels synthetic data', () => {
   const p = payload({ source: '<script>bad()</script>' }); p.notices = ['</pre><script>bad()</script>']
@@ -99,4 +102,36 @@ test('synthetic mode requires no API and is visibly labelled', async (t) => {
   t.after(() => new Promise((resolve) => server.close(resolve)))
   const text = await (await fetch(`http://127.0.0.1:${server.address().port}`)).text()
   assert.ok(text.includes('SYNTHETIC DEMO')); assert.ok(text.includes('synthetic-example'))
+})
+
+
+test('object-shaped attribution notices survive both current and unavailable projections', () => {
+  const p = payload()
+  p.notices = { attributionRequired: true, sources: [{ source: 'test-provider', attribution: 'Preserve this credit', license: 'test-licence' }] }
+  for (const instant of [NOW, NOW + 600_000]) {
+    const context = projectWeather(p, instant)
+    assert.deepEqual(context.notices, p.notices)
+    const html = renderDisplay(context)
+    assert.ok(html.includes('Preserve this credit'))
+    assert.ok(html.includes('attributionRequired'))
+  }
+})
+
+test('custom selectors declare their own evidence dependencies', () => {
+  const paths = ['facts.fieldSnapshot.weather.current.windKph']
+  const result = selectCard(projectWeather(payload(), NOW), [{ id: 'wind', title: 'Wind', text: 'My content', matches: (c) => c.weather.windKph === 8, evidencePaths: paths }])
+  assert.deepEqual(result.evidencePaths, paths)
+  assert.notEqual(result.evidencePaths, paths)
+  const defaultRule = selectCard(projectWeather(payload(), NOW))
+  assert.deepEqual(defaultRule.evidencePaths, ['facts.fieldSnapshot.weather.current.temperatureC'])
+})
+
+test('exported server socket guard cannot be bypassed with a forged Host header', () => {
+  for (const address of ['127.0.0.1', '::1', '::ffff:127.0.0.1']) {
+    assert.equal(isLoopbackSocket({ localAddress: address, remoteAddress: address }), true)
+  }
+  assert.equal(isLoopbackSocket({ localAddress: '192.0.2.10', remoteAddress: '192.0.2.11' }), false)
+  assert.equal(isLoopbackSocket({ localAddress: '127.0.0.1', remoteAddress: '192.0.2.11' }), false)
+  assert.equal(isLoopbackSocket({ localAddress: '0.0.0.0', remoteAddress: '127.0.0.1' }), false)
+  assert.equal(isLoopbackSocket(null), false)
 })

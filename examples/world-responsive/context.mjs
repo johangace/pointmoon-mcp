@@ -4,7 +4,8 @@ const finite = (value) => typeof value === 'number' && Number.isFinite(value)
 
 export function projectWeather(payload, now = Date.now()) {
   const reading = payload?.facts?.fieldSnapshot?.weather?.current
-  const notices = Array.isArray(payload?.notices) ? payload.notices : []
+  // Preserve the hosted object-shaped trust block, including attributionRequired.
+  const notices = isObject(payload?.notices) || Array.isArray(payload?.notices) ? payload.notices : null
   const unknown = (reason) => ({ status: 'unavailable', reason, notices, weather: null })
   if (!isObject(payload) || payload.silent === true || !isObject(reading) || reading.silent === true ||
       reading.resolutionStatus === 'unresolved' || reading.provider === 'unresolved') return unknown('not-reported')
@@ -15,7 +16,8 @@ export function projectWeather(payload, now = Date.now()) {
   if (!Number.isFinite(now) || !Number.isFinite(observed) || !finite(ttl) || ttl <= 0) return unknown('unknown-freshness')
   if (observed > now) return unknown('future-reading')
   const expires = observed + ttl * 60_000
-  if (!Number.isFinite(expires) || expires <= now) return unknown('stale')
+  if (!Number.isFinite(expires) || !Number.isFinite(new Date(expires).getTime())) return unknown('unknown-freshness')
+  if (expires <= now) return unknown('stale')
   if (typeof reading.source !== 'string' || !reading.source.trim()) return unknown('missing-source')
   if (!finite(reading.temperatureC)) return unknown('missing-temperature')
   return { status: 'current', reason: null, notices, weather: {
@@ -29,8 +31,8 @@ export function projectWeather(payload, now = Date.now()) {
 
 // These cards and thresholds are authored by the DEMO APPLICATION, not Pointmoon.
 export const DEMO_CARDS = [
-  { id: 'cool-drinks', title: 'Cold drinks', text: 'Show the cafe’s cold-drinks collection.', matches: (context) => context.weather?.temperatureC >= 23 },
-  { id: 'warm-drinks', title: 'Something warm', text: 'Show the cafe’s hot-drinks collection.', matches: (context) => context.weather?.temperatureC <= 10 },
+  { id: 'cool-drinks', title: 'Cold drinks', text: 'Show the cafe’s cold-drinks collection.', matches: (context) => context.weather?.temperatureC >= 23, evidencePaths: ['facts.fieldSnapshot.weather.current.temperatureC'] },
+  { id: 'warm-drinks', title: 'Something warm', text: 'Show the cafe’s hot-drinks collection.', matches: (context) => context.weather?.temperatureC <= 10, evidencePaths: ['facts.fieldSnapshot.weather.current.temperatureC'] },
 ]
 const DEFAULT_CARD = { id: 'menu', title: 'Explore the menu', text: 'Show the regular collection. No weather-specific claim is needed.' }
 
@@ -38,8 +40,10 @@ const DEFAULT_CARD = { id: 'menu', title: 'Explore the menu', text: 'Show the re
 export function selectCard(context, cards = DEMO_CARDS) {
   const selected = context.status === 'current' ? cards.find((card) => card.matches(context)) : null
   const { id, title, text } = selected ?? DEFAULT_CARD
+  const declaredPaths = selected?.evidencePaths
   return { id, title, text, selectedBy: 'application-rule',
-    evidencePaths: selected ? ['facts.fieldSnapshot.weather.current.temperatureC'] : [] }
+    ...(Array.isArray(declaredPaths) && declaredPaths.every((path) => typeof path === 'string')
+      ? { evidencePaths: [...declaredPaths] } : {}) }
 }
 
 export async function fetchContext({ lat, lng, baseUrl = 'https://pointmoon.ai', apiKey, fetcher = fetch, timeoutMs = 45_000 }) {
@@ -76,5 +80,5 @@ export function syntheticPayload(now = Date.now(), temperatureC = 25) {
   return { facts: { fieldSnapshot: { weather: { current: {
     source: 'synthetic-example', observedAt: new Date(now).toISOString(), ttlMinutes: 5,
     temperatureC, windKph: 8,
-  } } } }, notices: [{ source: 'synthetic-example', attribution: 'Invented data for testing; not actual conditions.' }] }
+  } } } }, notices: { attributionRequired: false, sources: [{ source: 'synthetic-example', attribution: 'Invented data for testing; not actual conditions.' }] } }
 }
