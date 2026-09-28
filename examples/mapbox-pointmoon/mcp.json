@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "mapbox": {
+      "type": "http",
+      "url": "https://mcp.mapbox.com/mcp"
+    },
+    "pointmoon": {
+      "type": "http",
+      "url": "https://pointmoon.ai/api/mcp"
+    }
+  }
+}
