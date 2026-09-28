@@ -62,6 +62,8 @@ Four examples ship here — a first call, a call by place name, a coordinate whe
 Pointmoon goes deliberately silent, and the same thing over plain HTTP with no MCP.
 See [examples/](./examples/).
 
+**Mapbox + Pointmoon:** [examples/mapbox-pointmoon/](./examples/mapbox-pointmoon/) is a two-MCP proof for route/search + living-world grounding. Mapbox owns spatial lookup/routing/rendering; Pointmoon adds sourced current environmental evidence at a bounded set of route coordinates.
+
 ---
 
 ## Add it to your MCP client
