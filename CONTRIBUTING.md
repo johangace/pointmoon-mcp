@@ -29,6 +29,10 @@ node bin/pointmoon-mcp.mjs
 Then send a JSON-RPC `initialize` / `tools/list` / `tools/call` line on stdin. Point it at a
 local Pointmoon during development with `POINTMOON_BASE_URL`.
 
+For optional environment-supplied API keys, endpoint restrictions and sanitized errors,
+see [AUTHENTICATION.md](./AUTHENTICATION.md). Run `npm test` for local credential-transport
+regressions; they use synthetic keys and do not call the hosted service.
+
 ## Running the examples
 
 ```bash
