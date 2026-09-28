@@ -32,6 +32,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Credential transport regression tests
+        run: npm test
       - run: node examples/ci-failure-drill.mjs
 
   # The real thing: a fresh clone, only Node installed, no key, no account,
