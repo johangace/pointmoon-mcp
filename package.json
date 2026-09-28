@@ -9,6 +9,7 @@
     "pointmoon-mcp": "./bin/pointmoon-mcp.mjs"
   },
   "scripts": {
+    "test": "node --test test/credentials.test.mjs",
     "examples": "node examples/run-all.mjs",
     "examples:drill": "node examples/ci-failure-drill.mjs",
     "conformance": "node conformance/run.mjs",
@@ -19,7 +20,8 @@
   "files": [
     "bin/",
     "CONTRACT.md",
-    "README.md"
+    "README.md",
+    "AUTHENTICATION.md"
   ],
   "engines": {
     "node": ">=18"
