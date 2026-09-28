@@ -7,6 +7,8 @@ const PROTOCOL_VERSION = '2025-03-26'
 // Override with POINTMOON_BASE_URL=http://127.0.0.1:3110 for local dev.
 const DEFAULT_BASE_URL = 'https://pointmoon.ai'
 const baseUrl = process.env.POINTMOON_BASE_URL || DEFAULT_BASE_URL
+// Transport credential only: never part of tools/list or tools/call arguments.
+const apiKey = process.env.POINTMOON_API_KEY || ''
 
 const LOCATION_PROPERTIES = {
   lat: {
@@ -246,30 +248,103 @@ function toSearchParams(args = {}) {
   return params
 }
 
-async function callHttpGet(path, args, headers) {
-  const url = new URL(path, baseUrl)
-  url.search = toSearchParams(args).toString()
-  const res = await fetch(url, { headers, signal: AbortSignal.timeout(30000) })
-  const json = await res.json()
-  if (!res.ok) {
-    throw new Error(JSON.stringify(json, null, 2))
+// Only this error's bounded metadata may cross into the MCP result. Upstream
+// bodies, response headers, URLs and exception messages can contain secrets.
+class PointmoonRequestError extends Error {
+  constructor(code, message, status, retryAfterSeconds) {
+    super(message)
+    this.code = code
+    this.status = status
+    this.retryAfterSeconds = retryAfterSeconds
   }
-  return json
+}
+
+function requestUrl(path) {
+  let base
+  try {
+    base = new URL(baseUrl)
+  } catch {
+    throw new PointmoonRequestError('invalid_config', 'POINTMOON_BASE_URL must be an absolute HTTPS URL.')
+  }
+  const localHttp = base.protocol === 'http:' && ['127.0.0.1', '[::1]'].includes(base.hostname)
+  if ((base.protocol !== 'https:' && !localHttp) || base.username || base.password || base.search || base.hash) {
+    throw new PointmoonRequestError(
+      'invalid_config',
+      'Use an HTTPS base URL without credentials, query or fragment. HTTP is allowed only for a literal loopback address in local development.'
+    )
+  }
+  return new URL(path, base)
+}
+
+function requestHeaders(extra) {
+  // Do not trim malformed configured credentials into anonymous access.
+  if (apiKey && !/^[A-Za-z0-9._~+/-]+=*$/.test(apiKey)) {
+    throw new PointmoonRequestError('invalid_config', 'POINTMOON_API_KEY is not a valid bearer credential. Check the local environment.')
+  }
+  const headers = new Headers(extra)
+  headers.set('accept', 'application/json')
+  if (apiKey) headers.set('authorization', `Bearer ${apiKey}`)
+  return headers
+}
+
+function httpFailure(res) {
+  const messages = {
+    400: ['invalid_request', 'Pointmoon rejected the request. Check the documented tool inputs.'],
+    401: ['unauthorized', 'Pointmoon rejected the credential. Check or replace POINTMOON_API_KEY; no anonymous retry was made.'],
+    403: ['forbidden', 'Pointmoon denied access. Check the account entitlement.'],
+    429: ['rate_limited', 'Pointmoon request or usage limit reached. Check usage and retry after the indicated delay.'],
+  }
+  const [code, message] = messages[res.status] || ['http_error', `Pointmoon returned HTTP ${res.status}. No field result is available.`]
+  const rawRetry = res.headers.get('retry-after')
+  const retry = rawRetry && /^\d{1,6}$/.test(rawRetry) ? Number(rawRetry) : undefined
+  return new PointmoonRequestError(code, message, res.status, retry !== undefined && retry <= 86400 ? retry : undefined)
+}
+
+async function callHttp(path, args, method, extraHeaders) {
+  const url = requestUrl(path)
+  const headers = requestHeaders(extraHeaders)
+  if (method === 'GET') url.search = toSearchParams(args).toString()
+  else headers.set('content-type', 'application/json')
+  const signal = AbortSignal.timeout(30000)
+  try {
+    const res = await fetch(url, {
+      method,
+      headers,
+      ...(method === 'POST' ? { body: JSON.stringify(args ?? {}) } : {}),
+      // Even a same-origin redirect can move the request onto another route;
+      // never follow redirects with the Pointmoon or caller-supplied eBird key.
+      redirect: 'manual',
+      cache: 'no-store',
+      signal,
+    })
+    if (!res.ok) {
+      const failure = httpFailure(res)
+      await res.body?.cancel().catch(() => {})
+      throw failure
+    }
+    const json = await res.json()
+    if (!json || typeof json !== 'object' || Array.isArray(json)) {
+      throw new PointmoonRequestError('invalid_response', 'Pointmoon returned an invalid response, not environmental silence.', res.status)
+    }
+    if (json.error) {
+      throw new PointmoonRequestError('upstream_error', 'Pointmoon reported a service error, not environmental silence.', res.status)
+    }
+    return json
+  } catch (error) {
+    if (error instanceof PointmoonRequestError) throw error
+    if (signal.aborted) {
+      throw new PointmoonRequestError('timeout', 'Pointmoon request timed out. No field result is available.')
+    }
+    throw new PointmoonRequestError('request_failed', 'Pointmoon could not return a valid JSON response. Check the connection and configured endpoint.')
+  }
+}
+
+async function callHttpGet(path, args, headers) {
+  return callHttp(path, args, 'GET', headers)
 }
 
 async function callHttpPost(path, args) {
-  const url = new URL(path, baseUrl)
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(args ?? {}),
-    signal: AbortSignal.timeout(30000),
-  })
-  const json = await res.json()
-  if (!res.ok) {
-    throw new Error(JSON.stringify(json, null, 2))
-  }
-  return json
+  return callHttp(path, args, 'POST')
 }
 
 function toToolResult(json, summary) {
@@ -294,6 +369,14 @@ function withAdapterDefault(args = {}) {
 }
 
 async function handleToolCall(name, rawArgs = {}) {
+  const tool = tools.find((entry) => entry.name === name)
+  if (!tool) throw new PointmoonRequestError('unknown_tool', 'Unknown Pointmoon tool.')
+  // Never serialize invented credential/configuration arguments into URL logs.
+  // The existing eBird input is explicitly declared and is header-only below.
+  if (!rawArgs || typeof rawArgs !== 'object' || Array.isArray(rawArgs) ||
+      Object.keys(rawArgs).some((key) => !Object.hasOwn(tool.inputSchema.properties, key))) {
+    throw new PointmoonRequestError('invalid_arguments', 'Use only the documented tool inputs. Configure the Pointmoon key in the local environment, not tool arguments.')
+  }
   const args = withAdapterDefault(rawArgs)
 
   if (name === 'field_truth') {
@@ -402,11 +485,16 @@ async function handleRequest(message) {
 
   if (message.method === 'tools/call') {
     try {
-      const result = await handleToolCall(message.params?.name, message.params?.arguments || {})
+      const result = await handleToolCall(message.params?.name, message.params?.arguments ?? {})
       writeResponse(message.id, result)
     } catch (error) {
       writeResponse(message.id, {
-        content: [{ type: 'text', text: error?.message || String(error) }],
+        content: [{ type: 'text', text: error instanceof PointmoonRequestError ? error.message : 'Pointmoon request failed.' }],
+        structuredContent: {
+          error: error instanceof PointmoonRequestError ? error.code : 'request_failed',
+          ...(error instanceof PointmoonRequestError && error.status !== undefined ? { status: error.status } : {}),
+          ...(error instanceof PointmoonRequestError && error.retryAfterSeconds !== undefined ? { retryAfterSeconds: error.retryAfterSeconds } : {}),
+        },
         isError: true,
       })
     }
@@ -434,7 +522,7 @@ async function main() {
     try {
       payload = JSON.parse(line)
     } catch (error) {
-      writeError(null, -32700, 'Parse error', error?.message)
+      writeError(null, -32700, 'Parse error')
       continue
     }
 
@@ -451,6 +539,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(error?.stack || error?.message || error)
+  console.error('Pointmoon connector stopped unexpectedly.')
   process.exit(1)
 })
